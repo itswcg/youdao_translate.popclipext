@@ -1,33 +1,49 @@
+# -*- coding: utf-8 -*-
 import uuid
 import requests
+import hashlib
+import time
 
 
-class Translator(object):
+class Translator:
+    YOUDAO_URL = 'https://openapi.youdao.com/api'
+    APP_KEY = ''
+    APP_SECRET = ''
 
-    def __init__(self):
-        self.key = '6e5021f027974f9dbaebb4b39c3afcf3'
+    def encrypt(self, signStr):
+        hash_algorithm = hashlib.sha256()
+        hash_algorithm.update(signStr.encode('utf-8'))
+        return hash_algorithm.hexdigest()
 
-    def translate(self, text, to_lang):
+    def truncate(self, q):
+        if q is None:
+            return None
+        size = len(q)
+        return q if size <= 20 else q[0:10] + str(size) + q[size - 10:size]
 
-        base_url = 'https://api.cognitive.microsofttranslator.com'
-        path = '/translate?api-version=3.0'
-        params = '&to=' + to_lang
-        constructed_url = base_url + path + params
+    def do_request(self, data):
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        return requests.post(self.YOUDAO_URL, data=data, headers=headers)
 
-        headers = {
-            'Ocp-Apim-Subscription-Key': self.key,
-            'Content-type': 'application/json',
-            'X-ClientTraceId': str(uuid.uuid4())
-        }
+    def translate(self, text, f='auto', t='auto'):
+        q = text
 
-        body = [{
-            'text': text
-        }]
+        data = {}
+        data['from'] = f
+        data['to'] = t
+        data['signType'] = 'v3'
+        curtime = str(int(time.time()))
+        data['curtime'] = curtime
+        salt = str(uuid.uuid1())
+        signStr = self.APP_KEY + self.truncate(q) + salt + curtime + self.APP_SECRET
+        sign = self.encrypt(signStr)
+        data['appKey'] = self.APP_KEY
+        data['q'] = q
+        data['salt'] = salt
+        data['sign'] = sign
 
-        request = requests.post(constructed_url, headers=headers, json=body)
-
-        if request.status_code == requests.codes.ok:
-            request.encoding = 'utf-8'
-            return request.json()
+        response = self.do_request(data).json()
+        if response['errorCode'] == '0':
+            return response['translation'][0]
         else:
-            raise Exception('Failed to obtain translation')
+            return response['errorCode']

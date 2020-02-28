@@ -8,7 +8,7 @@
 		    <key>Image File</key>
 			<string>icon.png</string>
 			<key>Script Interpreter</key>
-			<string>/usr/bin/python</string>
+			<string>/usr/bin/python3</string>
 			<key>Shell Script File</key>
 			<string>main.py</string>
 			<key>Title</key>
@@ -62,6 +62,7 @@
 			<array>
 				<string>屏幕中央确认框</string>
 				<string>屏幕右上角通知</string>
+				<string>自适应弹窗</string>
 			</array>
 		</dict>
 		<dict>
